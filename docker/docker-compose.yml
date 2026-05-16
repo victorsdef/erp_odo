@@ -1,0 +1,50 @@
+services:
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: odo_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: odo_db
+      POSTGRES_USER: odo_user
+      POSTGRES_PASSWORD: odo_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - odo_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U odo_user -d odo_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  backend:
+    build:
+      context: ../odo-backend
+      dockerfile: Dockerfile
+    container_name: odo_backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/odo_db
+      SPRING_DATASOURCE_USERNAME: odo_user
+      SPRING_DATASOURCE_PASSWORD: odo_password
+      JWT_SECRET: odo_super_secret_key_must_be_at_least_256_bits_long_for_security
+      JWT_EXPIRATION: 86400000
+    ports:
+      - "8080:8080"
+    networks:
+      - odo_network
+
+volumes:
+  postgres_data:
+
+networks:
+  odo_network:
+    driver: bridge

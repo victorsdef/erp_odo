@@ -1,16 +1,17 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { COLORS } from '../../constants/colors';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function PatientDetailScreen() {
+  const { colors } = useTheme();
   return (
-    <View style={styles.container}>
-      <Text style={styles.text}>Detalle del Paciente</Text>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <Text style={[styles.text, { color: colors.textPrimary }]}>Detalle del Paciente</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background },
-  text: { fontSize: 18, color: COLORS.textPrimary },
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  text:      { fontSize: 18 },
 });
