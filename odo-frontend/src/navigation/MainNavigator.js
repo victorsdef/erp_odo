@@ -19,6 +19,9 @@ import InvoiceListScreen from '../screens/billing/InvoiceListScreen';
 import InvoiceFormScreen from '../screens/billing/InvoiceFormScreen';
 import AdminScreen from '../screens/admin/AdminScreen';
 import UserFormScreen from '../screens/admin/UserFormScreen';
+import TreatmentScreen from '../screens/admin/TreatmentScreen';
+import AuditLogScreen from '../screens/admin/AuditLogScreen';
+import ProfileScreen from '../screens/profile/ProfileScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -76,9 +79,15 @@ function AppointmentsStack() {
 }
 
 function DashboardStack() {
+  const { colors } = useTheme();
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="DashboardMain" component={DashboardScreen} />
+      <Stack.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{ headerShown: true, title: 'Mi perfil', ...headerOptions(colors) }}
+      />
     </Stack.Navigator>
   );
 }
@@ -87,10 +96,12 @@ function AdminStack() {
   const { colors } = useTheme();
   return (
     <Stack.Navigator screenOptions={headerOptions(colors)}>
-      <Stack.Screen name="AdminMain" component={AdminScreen}   options={{ headerShown: false }} />
-      <Stack.Screen name="UserForm"  component={UserFormScreen} options={({ route }) => ({
+      <Stack.Screen name="AdminMain"   component={AdminScreen}     options={{ headerShown: false }} />
+      <Stack.Screen name="UserForm"    component={UserFormScreen}  options={({ route }) => ({
         title: route.params?.user ? 'Editar usuario' : 'Nuevo usuario',
       })} />
+      <Stack.Screen name="Treatments"  component={TreatmentScreen} options={{ title: 'Tratamientos' }} />
+      <Stack.Screen name="AuditLog"    component={AuditLogScreen}  options={{ title: 'Auditoria' }} />
     </Stack.Navigator>
   );
 }
@@ -189,10 +200,11 @@ function SidebarLayout() {
   const [activeRoute, setActiveRoute] = useState('Dashboard');
 
   const SCREENS = {
-    Dashboard:    <DashboardScreen />,
+    Dashboard:    <DashboardStack />,
     Patients:     <PatientsStack />,
     Appointments: <AppointmentsStack />,
     Billing:      <BillingStack />,
+    Profile:      <ProfileScreen />,
     ...(isAdmin && { Admin: <AdminStack /> }),
   };
 

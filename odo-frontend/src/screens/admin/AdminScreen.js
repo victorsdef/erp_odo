@@ -13,6 +13,7 @@ const ROLE_META = {
   ADMIN:        { label: 'Admin',         color: '#8B5CF6', bg: '#F5F3FF' },
   DENTIST:      { label: 'Dentista',      color: '#2563EB', bg: '#EFF6FF' },
   RECEPTIONIST: { label: 'Recepcionista', color: '#10B981', bg: '#ECFDF5' },
+  PATIENT:      { label: 'Paciente',      color: '#F59E0B', bg: '#FFFBEB' },
 };
 
 function initials(name = '') {
@@ -99,6 +100,33 @@ export default function AdminScreen({ navigation }) {
             ))}
           </View>
 
+          {/* Quick access */}
+          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Herramientas</Text>
+          <View style={styles.toolsRow}>
+            <TouchableOpacity
+              style={[styles.toolCard, { backgroundColor: colors.surface }, SHADOWS.sm(isDark)]}
+              onPress={() => navigation.navigate('Treatments')}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.toolIcon, { backgroundColor: colors.primaryLight }]}>
+                <Ionicons name="medical" size={22} color={colors.primary} />
+              </View>
+              <Text style={[styles.toolLabel, { color: colors.textPrimary }]}>Tratamientos</Text>
+              <Text style={[styles.toolSub, { color: colors.textMuted }]}>Gestionar catalogo</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.toolCard, { backgroundColor: colors.surface }, SHADOWS.sm(isDark)]}
+              onPress={() => navigation.navigate('AuditLog')}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.toolIcon, { backgroundColor: colors.purpleLight }]}>
+                <Ionicons name="shield-checkmark" size={22} color={colors.purple} />
+              </View>
+              <Text style={[styles.toolLabel, { color: colors.textPrimary }]}>Auditoria</Text>
+              <Text style={[styles.toolSub, { color: colors.textMuted }]}>Historial de acciones</Text>
+            </TouchableOpacity>
+          </View>
+
           {/* User list */}
           <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
             Usuarios ({users.length})
@@ -178,7 +206,12 @@ const styles = StyleSheet.create({
   statIcon:    { width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
   statCount:   { fontSize: 24, fontWeight: '800' },
   statLabel:   { fontSize: 11, fontWeight: '500', textAlign: 'center' },
-  sectionTitle:{ fontSize: 15, fontWeight: '700', marginHorizontal: 20, marginBottom: 10 },
+  sectionTitle:{ fontSize: 15, fontWeight: '700', marginHorizontal: 20, marginBottom: 10, marginTop: 4 },
+  toolsRow:    { flexDirection: 'row', gap: 12, marginHorizontal: 20, marginBottom: 20 },
+  toolCard:    { flex: 1, borderRadius: 14, padding: 16, gap: 6 },
+  toolIcon:    { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
+  toolLabel:   { fontSize: 14, fontWeight: '700' },
+  toolSub:     { fontSize: 11 },
   card:        { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 14, padding: 14, marginHorizontal: 20, marginBottom: 10 },
   avatar:      { width: 46, height: 46, borderRadius: 23, justifyContent: 'center', alignItems: 'center' },
   avatarText:  { fontSize: 16, fontWeight: '800' },

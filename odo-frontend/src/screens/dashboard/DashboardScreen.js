@@ -61,12 +61,14 @@ export default function DashboardScreen({ navigation }) {
 
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-        <View>
+        <TouchableOpacity activeOpacity={0.7} onPress={() => navigation.navigate('Profile')}>
           <Text style={[styles.greeting, { color: colors.textPrimary }]}>
             Hola, {user?.name?.split(' ')[0]}
           </Text>
-          <Text style={[styles.role, { color: colors.textSecondary }]}>{user?.role}</Text>
-        </View>
+          <Text style={[styles.role, { color: colors.textSecondary }]}>
+            {user?.role}  · Ver perfil
+          </Text>
+        </TouchableOpacity>
         <View style={styles.headerActions}>
           <TouchableOpacity
             style={[styles.themeBtn, { backgroundColor: colors.primaryLight }]}

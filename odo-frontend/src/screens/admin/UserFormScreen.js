@@ -12,6 +12,7 @@ import { createUser, updateUser } from '../../services/adminService';
 const ROLES = [
   { value: 'DENTIST',      label: 'Dentista',      icon: 'medical-outline' },
   { value: 'RECEPTIONIST', label: 'Recepcionista', icon: 'headset-outline' },
+  { value: 'PATIENT',      label: 'Paciente',      icon: 'person-outline' },
   { value: 'ADMIN',        label: 'Admin',          icon: 'shield-checkmark-outline' },
 ];
 

@@ -7,7 +7,7 @@ export default function FormInput({
   label, value, onChangeText, placeholder,
   icon, keyboardType = 'default', secureTextEntry,
   multiline, numberOfLines = 1, editable = true,
-  onPress, rightIcon, error,
+  onPress, rightIcon, onRightIconPress, error,
 }) {
   const { colors } = useTheme();
   const [focused, setFocused] = useState(false);
@@ -52,7 +52,13 @@ export default function FormInput({
           numberOfLines={multiline ? numberOfLines : 1}
         />
         {rightIcon && (
-          <Ionicons name={rightIcon} size={17} color={colors.textMuted} />
+          onRightIconPress ? (
+            <TouchableOpacity onPress={onRightIconPress} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Ionicons name={rightIcon} size={17} color={colors.textMuted} />
+            </TouchableOpacity>
+          ) : (
+            <Ionicons name={rightIcon} size={17} color={colors.textMuted} />
+          )
         )}
       </Container>
       {error && <Text style={[styles.error, { color: colors.danger }]}>{error}</Text>}

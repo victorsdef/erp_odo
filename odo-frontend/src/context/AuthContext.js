@@ -28,14 +28,20 @@ export const AuthProvider = ({ children }) => {
     setUser(data.user);
   };
 
-  const logout = async () => {
-    await logoutService();
+  const logout = () => {
     setToken(null);
     setUser(null);
+    AsyncStorage.removeItem('token').catch(() => {});
+    AsyncStorage.removeItem('user').catch(() => {});
+  };
+
+  const updateUser = async (updatedUser) => {
+    setUser(updatedUser);
+    await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

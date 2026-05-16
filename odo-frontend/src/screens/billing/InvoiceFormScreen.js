@@ -10,33 +10,32 @@ import { SHADOWS } from '../../constants/theme';
 import FormInput from '../../components/forms/FormInput';
 import SectionTitle from '../../components/forms/SectionTitle';
 import { getPatients } from '../../services/patientService';
-import api from '../../services/api';
-import { ENDPOINTS } from '../../constants/api';
-
-const TREATMENTS = [
-  { label: 'Limpieza dental',    price: 80  },
-  { label: 'Extraccion simple',  price: 120 },
-  { label: 'Endodoncia',         price: 350 },
-  { label: 'Corona ceramica',    price: 500 },
-  { label: 'Blanqueamiento',     price: 200 },
-  { label: 'Radiografia',        price: 40  },
-  { label: 'Consulta general',   price: 50  },
-  { label: 'Ortodoncia mensual', price: 150 },
-];
+import { createInvoice } from '../../services/invoiceService';
+import { getActiveTreatments } from '../../services/treatmentService';
 
 export default function InvoiceFormScreen({ navigation }) {
   const { colors, isDark } = useTheme();
-  const [patients, setPatients]   = useState([]);
-  const [form, setForm]           = useState({ patientId: null, patientName: '', items: [] });
-  const [showPatientPicker, setShowPatientPicker]   = useState(false);
+  const [patients, setPatients]     = useState([]);
+  const [treatments, setTreatments] = useState([]);
+  const [form, setForm]             = useState({ patientId: null, patientName: '', items: [], installmentCount: '1' });
+  const [showPatientPicker, setShowPatientPicker]     = useState(false);
   const [showTreatmentPicker, setShowTreatmentPicker] = useState(false);
   const [customAmount, setCustomAmount] = useState('');
   const [customLabel, setCustomLabel]   = useState('');
   const [saving, setSaving]             = useState(false);
 
-  useEffect(() => { getPatients().then(setPatients).catch(() => {}); }, []);
+  useEffect(() => {
+    getPatients().then(setPatients).catch(() => {});
+    getActiveTreatments()
+      .then((data) => setTreatments(data.map((t) => ({ label: t.name, price: parseFloat(t.defaultPrice) }))))
+      .catch(() => {});
+  }, []);
 
   const set = (key) => (val) => setForm((f) => ({ ...f, [key]: val }));
+  const setInstallments = (val) => {
+    const n = parseInt(val.replace(/[^0-9]/g, '')) || 1;
+    setForm((f) => ({ ...f, installmentCount: String(Math.max(1, n)) }));
+  };
 
   const addTreatment = (t) => {
     setForm((f) => ({ ...f, items: [...f.items, { ...t, qty: 1 }] }));
@@ -72,10 +71,11 @@ export default function InvoiceFormScreen({ navigation }) {
     if (form.items.length === 0) return Alert.alert('Requerido', 'Agrega al menos un tratamiento');
     setSaving(true);
     try {
-      await api.post(ENDPOINTS.INVOICES, {
+      await createInvoice({
         patientId: form.patientId,
         total: parseFloat(total.toFixed(2)),
         description: form.items.map((it) => `${it.label} x${it.qty}`).join(', '),
+        installmentCount: parseInt(form.installmentCount) || 1,
       });
       navigation.goBack();
     } catch {
@@ -177,6 +177,30 @@ export default function InvoiceFormScreen({ navigation }) {
                 <Text style={[styles.summaryTotalValue, { color: colors.primary }]}>S/ {total.toFixed(2)}</Text>
               </View>
             </View>
+
+            <SectionTitle title="Pago en cuotas" />
+            <View style={[styles.cuotasCard, { backgroundColor: colors.surface }, SHADOWS.sm(isDark)]}>
+              <View style={styles.cuotasRow}>
+                <View style={{ flex: 1 }}>
+                  <FormInput
+                    label="Numero de cuotas"
+                    value={form.installmentCount}
+                    onChangeText={setInstallments}
+                    placeholder="1"
+                    icon="layers-outline"
+                    keyboardType="number-pad"
+                  />
+                </View>
+                {parseInt(form.installmentCount) > 1 && (
+                  <View style={[styles.cuotaHint, { backgroundColor: colors.primaryLight }]}>
+                    <Text style={[styles.cuotaHintLabel, { color: colors.primary }]}>Por cuota</Text>
+                    <Text style={[styles.cuotaHintValue, { color: colors.primary }]}>
+                      S/ {(total / (parseInt(form.installmentCount) || 1)).toFixed(2)}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </View>
           </>
         )}
 
@@ -251,7 +275,7 @@ export default function InvoiceFormScreen({ navigation }) {
               </TouchableOpacity>
             </View>
             <FlatList
-              data={TREATMENTS}
+              data={treatments}
               keyExtractor={(item) => item.label}
               renderItem={({ item }) => (
                 <TouchableOpacity
@@ -292,6 +316,11 @@ const styles = StyleSheet.create({
   customRow:        { flexDirection: 'row', gap: 12 },
   customAddBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, padding: 10, borderRadius: 10, borderWidth: 1, marginBottom: 8 },
   customAddText:    { fontWeight: '600', fontSize: 13 },
+  cuotasCard:       { borderRadius: 14, padding: 16, marginBottom: 8 },
+  cuotasRow:        { flexDirection: 'row', alignItems: 'flex-end', gap: 12 },
+  cuotaHint:        { borderRadius: 12, padding: 12, alignItems: 'center', marginBottom: 8, minWidth: 100 },
+  cuotaHintLabel:   { fontSize: 11, fontWeight: '600' },
+  cuotaHintValue:   { fontSize: 20, fontWeight: '800' },
   summaryCard:      { borderRadius: 14, padding: 16, gap: 12 },
   summaryRow:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   summaryLabel:     { fontSize: 14 },

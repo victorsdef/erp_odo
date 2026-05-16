@@ -2,30 +2,29 @@ package com.odo.odo_backend.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "users")
+@Table(name = "treatments")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-public class User {
+public class Treatment {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
-    private String email;
-
-    @Column(nullable = false)
-    private String password;
-
     @Column(nullable = false)
     private String name;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private Role role;
+    private String description;
 
+    @Column(precision = 10, scale = 2)
+    private BigDecimal defaultPrice;
+
+    private Integer durationMinutes;
+
+    @Builder.Default
     @Column(nullable = false)
     private boolean active = true;
 
@@ -34,8 +33,4 @@ public class User {
 
     @PrePersist
     void prePersist() { this.createdAt = LocalDateTime.now(); }
-
-    public enum Role {
-        ADMIN, DENTIST, RECEPTIONIST, PATIENT
-    }
 }

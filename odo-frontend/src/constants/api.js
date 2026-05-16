@@ -23,4 +23,15 @@ export const ENDPOINTS = {
   INVOICES: '/invoices',
   INVOICE_BY_ID: (id) => `/invoices/${id}`,
   INVOICES_BY_PATIENT: (id) => `/invoices/patient/${id}`,
+  INVOICE_PAYMENTS: (id) => `/invoices/${id}/payments`,
+  INVOICE_CANCEL: (id) => `/invoices/${id}/cancel`,
+
+  // Treatments
+  TREATMENTS: '/treatments',
+  TREATMENTS_ALL: '/admin/treatments',
+  TREATMENT_BY_ID: (id) => `/admin/treatments/${id}`,
+  TREATMENT_TOGGLE: (id) => `/admin/treatments/${id}/toggle-active`,
+
+  // Audit Logs
+  AUDIT_LOGS: '/admin/audit-logs',
 };
