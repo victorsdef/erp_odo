@@ -1,0 +1,37 @@
+# Node
+node_modules/
+npm-debug.log*
+.npm
+
+# Expo
+.expo/
+dist/
+web-build/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+
+# Java / Spring Boot
+odo-backend/target/
+odo-backend/*.jar
+odo-backend/*.war
+odo-backend/.mvn/
+odo-backend/mvnw
+odo-backend/mvnw.cmd
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# Env
+.env
+.env.local
+.env.production
+
+# OS
+.DS_Store
+Thumbs.db
