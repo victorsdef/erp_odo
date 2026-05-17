@@ -27,6 +27,7 @@ function initials(name = '') {
 export default function Sidebar({ activeRoute, onNavigate, collapsed = false, isAdmin = false }) {
   const { colors, isDark, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
+  const isPatient = user?.rol === 'PATIENT';
 
   return (
     <View style={[styles.sidebar, { backgroundColor: colors.sidebar, width: collapsed ? 72 : 220 }]}>
@@ -44,7 +45,7 @@ export default function Sidebar({ activeRoute, onNavigate, collapsed = false, is
 
       {/* Nav items */}
       <View style={styles.nav}>
-        {[...NAV_ITEMS, ...(isAdmin ? [ADMIN_ITEM] : [])].map((item) => {
+        {[...NAV_ITEMS.filter((i) => !(isPatient && i.route === 'Patients')), ...(isAdmin ? [ADMIN_ITEM] : [])].map((item) => {
           const isActive = activeRoute === item.route;
           return (
             <TouchableOpacity
@@ -93,16 +94,16 @@ export default function Sidebar({ activeRoute, onNavigate, collapsed = false, is
         >
           <View style={[styles.profileAvatar, { backgroundColor: colors.primary + '33' }]}>
             <Text style={[styles.profileInitials, { color: colors.sidebarActive }]}>
-              {initials(user?.name)}
+              {initials(user?.nombre)}
             </Text>
           </View>
           {!collapsed && (
             <View style={styles.profileInfo}>
               <Text style={[styles.profileName, { color: colors.sidebarText }]} numberOfLines={1}>
-                {user?.name?.split(' ')[0]}
+                {user?.nombre?.split(' ')[0]}
               </Text>
               <Text style={[styles.profileRole, { color: colors.sidebarText + '99' }]} numberOfLines={1}>
-                {ROLE_LABEL[user?.role] ?? user?.role}
+                {ROLE_LABEL[user?.rol] ?? user?.rol}
               </Text>
             </View>
           )}

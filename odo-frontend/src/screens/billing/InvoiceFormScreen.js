@@ -27,7 +27,7 @@ export default function InvoiceFormScreen({ navigation }) {
   useEffect(() => {
     getPatients().then(setPatients).catch(() => {});
     getActiveTreatments()
-      .then((data) => setTreatments(data.map((t) => ({ label: t.name, price: parseFloat(t.defaultPrice) }))))
+      .then((data) => setTreatments(data.map((t) => ({ label: t.nombre, price: parseFloat(t.precioBase) }))))
       .catch(() => {});
   }, []);
 
@@ -72,10 +72,10 @@ export default function InvoiceFormScreen({ navigation }) {
     setSaving(true);
     try {
       await createInvoice({
-        patientId: form.patientId,
+        pacienteId: form.patientId,
         total: parseFloat(total.toFixed(2)),
-        description: form.items.map((it) => `${it.label} x${it.qty}`).join(', '),
-        installmentCount: parseInt(form.installmentCount) || 1,
+        descripcion: form.items.map((it) => `${it.label} x${it.qty}`).join(', '),
+        numeroCuotas: parseInt(form.installmentCount) || 1,
       });
       navigation.goBack();
     } catch {
@@ -245,16 +245,16 @@ export default function InvoiceFormScreen({ navigation }) {
                 <TouchableOpacity
                   style={[styles.pickerRow, { borderBottomColor: colors.border }]}
                   onPress={() => {
-                    setForm((f) => ({ ...f, patientId: item.id, patientName: `${item.firstName} ${item.lastName}` }));
+                    setForm((f) => ({ ...f, patientId: item.id, patientName: `${item.nombre} ${item.apellido}` }));
                     setShowPatientPicker(false);
                   }}
                 >
                   <View style={[styles.pickerAvatar, { backgroundColor: colors.primaryLight }]}>
                     <Text style={[styles.pickerAvatarText, { color: colors.primary }]}>
-                      {item.firstName?.[0]}{item.lastName?.[0]}
+                      {item.nombre?.[0]}{item.apellido?.[0]}
                     </Text>
                   </View>
-                  <Text style={[styles.pickerName, { color: colors.textPrimary }]}>{item.firstName} {item.lastName}</Text>
+                  <Text style={[styles.pickerName, { color: colors.textPrimary }]}>{item.nombre} {item.apellido}</Text>
                   <Ionicons name="chevron-forward" size={16} color={colors.border} />
                 </TouchableOpacity>
               )}

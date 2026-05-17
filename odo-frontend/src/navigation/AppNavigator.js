@@ -4,10 +4,11 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import AuthNavigator from './AuthNavigator';
 import MainNavigator from './MainNavigator';
+import ForcePasswordScreen from '../screens/auth/ForcePasswordScreen';
 import { View, ActivityIndicator } from 'react-native';
 
 export default function AppNavigator() {
-  const { token, loading } = useAuth();
+  const { token, user, loading } = useAuth();
   const { colors } = useTheme();
 
   if (loading) {
@@ -20,7 +21,12 @@ export default function AppNavigator() {
 
   return (
     <NavigationContainer>
-      {token ? <MainNavigator /> : <AuthNavigator />}
+      {!token
+        ? <AuthNavigator />
+        : user?.debeActualizarContrasena
+          ? <ForcePasswordScreen />
+          : <MainNavigator />
+      }
     </NavigationContainer>
   );
 }

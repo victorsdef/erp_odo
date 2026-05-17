@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { SHADOWS } from '../../constants/theme';
 import FormInput from '../../components/forms/FormInput';
+import PhoneInput from '../../components/forms/PhoneInput';
 import SectionTitle from '../../components/forms/SectionTitle';
 import DatePickerModal from '../../components/forms/DatePickerModal';
 import { createPatient, updatePatient, getPatientById } from '../../services/patientService';
@@ -17,9 +18,9 @@ export default function PatientFormScreen({ route, navigation }) {
   const isEdit = !!editId;
 
   const [form, setForm] = useState({
-    firstName: '', lastName: '', dni: '',
-    phone: '', email: '', address: '',
-    birthDate: null, notes: '',
+    nombre: '', apellido: '', dni: '',
+    telefono: '', email: '', direccion: '',
+    fechaNacimiento: null, notas: '',
   });
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
@@ -30,24 +31,28 @@ export default function PatientFormScreen({ route, navigation }) {
     if (!isEdit) return;
     getPatientById(editId)
       .then((p) => setForm({
-        firstName: p.firstName ?? '',
-        lastName:  p.lastName  ?? '',
-        dni:       p.dni       ?? '',
-        phone:     p.phone     ?? '',
-        email:     p.email     ?? '',
-        address:   p.address   ?? '',
-        birthDate: p.birthDate ? new Date(p.birthDate) : null,
-        notes:     p.notes     ?? '',
+        nombre:          p.nombre          ?? '',
+        apellido:        p.apellido        ?? '',
+        dni:             p.dni             ?? '',
+        telefono:        p.telefono        ?? '',
+        email:           p.email           ?? '',
+        direccion:       p.direccion       ?? '',
+        fechaNacimiento: p.fechaNacimiento ? new Date(p.fechaNacimiento) : null,
+        notas:           p.notas           ?? '',
       }))
       .finally(() => setLoading(false));
   }, [editId]);
 
-  const set = (key) => (val) => setForm((f) => ({ ...f, [key]: val }));
+  const set = (key) => (val) => {
+    setForm((f) => ({ ...f, [key]: val }));
+    if (errors[key]) setErrors((e) => ({ ...e, [key]: undefined }));
+  };
 
   const validate = () => {
     const e = {};
-    if (!form.firstName.trim()) e.firstName = 'Requerido';
-    if (!form.lastName.trim())  e.lastName  = 'Requerido';
+    if (!form.nombre.trim())   e.nombre   = 'El nombre es requerido';
+    if (!form.apellido.trim()) e.apellido = 'El apellido es requerido';
+    if (!form.dni.trim())      e.dni      = 'El DNI / cedula es requerido';
     if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
       e.email = 'Correo invalido';
     setErrors(e);
@@ -59,7 +64,7 @@ export default function PatientFormScreen({ route, navigation }) {
     setSaving(true);
     const payload = {
       ...form,
-      birthDate: form.birthDate ? form.birthDate.toISOString().split('T')[0] : null,
+      fechaNacimiento: form.fechaNacimiento ? form.fechaNacimiento.toISOString().split('T')[0] : null,
     };
     try {
       if (isEdit) await updatePatient(editId, payload);
@@ -91,21 +96,21 @@ export default function PatientFormScreen({ route, navigation }) {
         <SectionTitle title="Datos personales" />
         <View style={styles.row}>
           <View style={styles.half}>
-            <FormInput label="Nombre" value={form.firstName} onChangeText={set('firstName')}
-              placeholder="Juan" icon="person-outline" error={errors.firstName} />
+            <FormInput label="Nombre" required value={form.nombre} onChangeText={set('nombre')}
+              placeholder="Juan" icon="person-outline" error={errors.nombre} />
           </View>
           <View style={styles.half}>
-            <FormInput label="Apellido" value={form.lastName} onChangeText={set('lastName')}
-              placeholder="Perez" icon="person-outline" error={errors.lastName} />
+            <FormInput label="Apellido" required value={form.apellido} onChangeText={set('apellido')}
+              placeholder="Perez" icon="person-outline" error={errors.apellido} />
           </View>
         </View>
 
-        <FormInput label="DNI / Cedula" value={form.dni} onChangeText={set('dni')}
-          placeholder="12345678" icon="card-outline" keyboardType="numeric" />
+        <FormInput label="DNI / Cedula" required value={form.dni} onChangeText={set('dni')}
+          placeholder="12345678" icon="card-outline" keyboardType="numeric" error={errors.dni} />
 
         <FormInput
           label="Fecha de nacimiento"
-          value={formatDate(form.birthDate)}
+          value={formatDate(form.fechaNacimiento)}
           icon="calendar-outline"
           rightIcon="chevron-down"
           editable={false}
@@ -113,18 +118,21 @@ export default function PatientFormScreen({ route, navigation }) {
         />
 
         <SectionTitle title="Contacto" />
-        <FormInput label="Telefono" value={form.phone} onChangeText={set('phone')}
-          placeholder="+51 999 999 999" icon="call-outline" keyboardType="phone-pad" />
+        <PhoneInput
+          value={form.telefono}
+          onChange={set('telefono')}
+          error={errors.telefono}
+        />
 
         <FormInput label="Correo electronico" value={form.email} onChangeText={set('email')}
           placeholder="correo@ejemplo.com" icon="mail-outline"
           keyboardType="email-address" error={errors.email} />
 
-        <FormInput label="Direccion" value={form.address} onChangeText={set('address')}
+        <FormInput label="Direccion" value={form.direccion} onChangeText={set('direccion')}
           placeholder="Av. Principal 123" icon="location-outline" />
 
         <SectionTitle title="Notas clinicas" />
-        <FormInput label="Observaciones" value={form.notes} onChangeText={set('notes')}
+        <FormInput label="Observaciones" value={form.notas} onChangeText={set('notas')}
           placeholder="Alergias, antecedentes, etc." icon="document-text-outline"
           multiline numberOfLines={4} />
 
@@ -151,9 +159,9 @@ export default function PatientFormScreen({ route, navigation }) {
 
       <DatePickerModal
         visible={showDatePicker}
-        value={form.birthDate}
+        value={form.fechaNacimiento}
         maximumDate={new Date()}
-        onConfirm={(date) => { set('birthDate')(date); setShowDatePicker(false); }}
+        onConfirm={(date) => { set('fechaNacimiento')(date); setShowDatePicker(false); }}
         onCancel={() => setShowDatePicker(false)}
       />
     </View>

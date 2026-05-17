@@ -10,7 +10,8 @@ import { useTheme } from '../../context/ThemeContext';
 import { SHADOWS } from '../../constants/theme';
 import Skeleton, { SkeletonRow } from '../../components/common/Skeleton';
 import FormInput from '../../components/forms/FormInput';
-import { getInvoices, registerPayment, cancelInvoice } from '../../services/invoiceService';
+import { getInvoices, getInvoicesByPatient, registerPayment, cancelInvoice } from '../../services/invoiceService';
+import { useAuth } from '../../context/AuthContext';
 
 const STATUS = {
   PENDING:   { label: 'Pendiente', colorKey: 'warning',   icon: 'time-outline' },
@@ -45,6 +46,8 @@ function InvoiceSkeleton() {
 
 export default function InvoiceListScreen({ navigation }) {
   const { colors, isDark } = useTheme();
+  const { user } = useAuth();
+  const isPatient = user?.rol === 'PATIENT';
   const [invoices, setInvoices]   = useState([]);
   const [loading, setLoading]     = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -63,7 +66,9 @@ export default function InvoiceListScreen({ navigation }) {
 
   const fetchInvoices = useCallback(async () => {
     try {
-      const data = await getInvoices();
+      const data = isPatient && user?.pacienteId
+        ? await getInvoicesByPatient(user.pacienteId)
+        : await getInvoices();
       setInvoices(data);
     } catch {
       setInvoices([]);
@@ -71,17 +76,17 @@ export default function InvoiceListScreen({ navigation }) {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [isPatient, user?.pacienteId]);
 
   useFocusEffect(fetchInvoices);
   const onRefresh = () => { setRefreshing(true); fetchInvoices(); };
 
   const FILTERS = ['ALL', 'PENDING', 'PARTIAL', 'PAID', 'CANCELLED'];
-  const filtered = filter === 'ALL' ? invoices : invoices.filter((inv) => inv.status === filter);
+  const filtered = filter === 'ALL' ? invoices : invoices.filter((inv) => inv.estado === filter);
 
   const openPayment = (inv) => {
     setSelected(inv);
-    const balance = parseFloat(inv.balance ?? 0);
+    const balance = parseFloat(inv.saldo ?? 0);
     setPayAmount(String(balance.toFixed(2)));
     setPayNotes('');
     setPayModal(true);
@@ -93,7 +98,7 @@ export default function InvoiceListScreen({ navigation }) {
       return Alert.alert('Error', 'Ingresa un monto válido');
     setPaying(true);
     try {
-      const updated = await registerPayment(selected.id, { amount, notes: payNotes || null });
+      const updated = await registerPayment(selected.id, { monto: amount, notas: payNotes || null });
       setInvoices((prev) => prev.map((inv) => (inv.id === updated.id ? updated : inv)));
       setPayModal(false);
     } catch (e) {
@@ -128,12 +133,12 @@ export default function InvoiceListScreen({ navigation }) {
   };
 
   const renderItem = ({ item }) => {
-    const stat = STATUS[item.status] ?? STATUS.PENDING;
+    const stat = STATUS[item.estado] ?? STATUS.PENDING;
     const color = colors[stat.colorKey] ?? colors.warning;
-    const paid = parseFloat(item.paid ?? 0);
+    const paid = parseFloat(item.pagado ?? 0);
     const total = parseFloat(item.total ?? 0);
     const pct = total > 0 ? Math.round((paid / total) * 100) : 0;
-    const canPay = item.status === 'PENDING' || item.status === 'PARTIAL';
+    const canPay = item.estado === 'PENDING' || item.estado === 'PARTIAL';
 
     return (
       <TouchableOpacity
@@ -147,11 +152,11 @@ export default function InvoiceListScreen({ navigation }) {
           </View>
           <View style={styles.info}>
             <Text style={[styles.patientName, { color: colors.textPrimary }]} numberOfLines={1}>
-              {item.patient?.firstName} {item.patient?.lastName}
+              {item.pacienteNombre}
             </Text>
             <Text style={[styles.date, { color: colors.textMuted }]}>
-              {new Date(item.createdAt).toLocaleDateString('es')}
-              {item.installmentCount > 1 ? ` · ${item.installmentCount} cuotas` : ''}
+              {new Date(item.creadoEn).toLocaleDateString('es')}
+              {item.numeroCuotas > 1 ? ` · ${item.numeroCuotas} cuotas` : ''}
             </Text>
           </View>
           <View style={[styles.badge, { backgroundColor: color + '18' }]}>
@@ -183,7 +188,7 @@ export default function InvoiceListScreen({ navigation }) {
           </TouchableOpacity>
         )}
 
-        {(item.status === 'PENDING' || item.status === 'PARTIAL') && (
+        {!isPatient && (item.estado === 'PENDING' || item.estado === 'PARTIAL') && (
           <TouchableOpacity
             style={styles.cancelBtn}
             onPress={() => handleCancel(item)}
@@ -242,13 +247,15 @@ export default function InvoiceListScreen({ navigation }) {
         />
       )}
 
-      <TouchableOpacity
-        style={[styles.fab, { backgroundColor: colors.primary }, SHADOWS.lg(colors)]}
-        activeOpacity={0.85}
-        onPress={() => navigation.navigate('InvoiceForm')}
-      >
-        <Ionicons name="add" size={26} color="#fff" />
-      </TouchableOpacity>
+      {!isPatient && (
+        <TouchableOpacity
+          style={[styles.fab, { backgroundColor: colors.primary }, SHADOWS.lg(colors)]}
+          activeOpacity={0.85}
+          onPress={() => navigation.navigate('InvoiceForm')}
+        >
+          <Ionicons name="add" size={26} color="#fff" />
+        </TouchableOpacity>
+      )}
 
       {/* Payment modal */}
       <Modal visible={payModal} animationType="slide" transparent>
@@ -265,11 +272,11 @@ export default function InvoiceListScreen({ navigation }) {
                 <View style={[styles.balanceCard, { backgroundColor: colors.primaryLight }]}>
                   <Text style={[styles.balanceLabel, { color: colors.primary }]}>Saldo pendiente</Text>
                   <Text style={[styles.balanceAmount, { color: colors.primary }]}>
-                    S/ {parseFloat(selected.balance ?? 0).toFixed(2)}
+                    S/ {parseFloat(selected.saldo ?? 0).toFixed(2)}
                   </Text>
-                  {selected.installmentCount > 1 && (
+                  {selected.numeroCuotas > 1 && (
                     <Text style={[styles.installmentHint, { color: colors.primary }]}>
-                      Cuota sugerida: S/ {parseFloat(selected.installmentAmount ?? 0).toFixed(2)}
+                      Cuota sugerida: S/ {parseFloat(selected.montoCuota ?? 0).toFixed(2)}
                     </Text>
                   )}
                 </View>
@@ -315,21 +322,21 @@ export default function InvoiceListScreen({ navigation }) {
                 <Ionicons name="close" size={22} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
-            {detailInv?.payments?.length === 0 ? (
+            {detailInv?.pagos?.length === 0 ? (
               <Text style={[styles.noPayments, { color: colors.textMuted }]}>Sin pagos registrados</Text>
             ) : (
-              detailInv?.payments?.map((p, i) => (
+              detailInv?.pagos?.map((p, i) => (
                 <View key={i} style={[styles.paymentRow, { borderBottomColor: colors.border }]}>
                   <View style={[styles.payIcon, { backgroundColor: colors.secondaryLight }]}>
                     <Ionicons name="cash-outline" size={14} color={colors.secondary} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.payAmount, { color: colors.textPrimary }]}>
-                      S/ {parseFloat(p.amount).toFixed(2)}
+                      S/ {parseFloat(p.monto).toFixed(2)}
                     </Text>
-                    {p.notes ? <Text style={[styles.payNotes, { color: colors.textSecondary }]}>{p.notes}</Text> : null}
+                    {p.notas ? <Text style={[styles.payNotes, { color: colors.textSecondary }]}>{p.notas}</Text> : null}
                     <Text style={[styles.payDate, { color: colors.textMuted }]}>
-                      {new Date(p.paidAt).toLocaleDateString('es', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      {new Date(p.pagadoEn).toLocaleDateString('es', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </Text>
                   </View>
                 </View>

@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { SHADOWS } from '../../constants/theme';
 import FormInput from '../../components/forms/FormInput';
-import { createUser, updateUser } from '../../services/adminService';
+import { crearUsuario, actualizarUsuario } from '../../services/adminService';
 
 const ROLES = [
   { value: 'DENTIST',      label: 'Dentista',      icon: 'medical-outline' },
@@ -22,10 +22,10 @@ export default function UserFormScreen({ route, navigation }) {
   const isEdit   = editUser !== null;
 
   const [form, setForm] = useState({
-    name:     editUser?.name     ?? '',
-    email:    editUser?.email    ?? '',
-    password: '',
-    role:     editUser?.role     ?? 'DENTIST',
+    nombre:    editUser?.nombre ?? '',
+    email:     editUser?.email  ?? '',
+    contrasena: '',
+    rol:       editUser?.rol    ?? 'DENTIST',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [saving, setSaving]             = useState(false);
@@ -33,19 +33,19 @@ export default function UserFormScreen({ route, navigation }) {
   const set = (key) => (val) => setForm((f) => ({ ...f, [key]: val }));
 
   const handleSave = async () => {
-    if (!form.name.trim())  return Alert.alert('Requerido', 'El nombre es obligatorio');
+    if (!form.nombre.trim())  return Alert.alert('Requerido', 'El nombre es obligatorio');
     if (!form.email.trim()) return Alert.alert('Requerido', 'El email es obligatorio');
-    if (!isEdit && !form.password.trim()) return Alert.alert('Requerido', 'La contraseña es obligatoria');
+    if (!isEdit && !form.contrasena.trim()) return Alert.alert('Requerido', 'La contraseña es obligatoria');
 
     setSaving(true);
     try {
-      const payload = { name: form.name, email: form.email, role: form.role };
-      if (form.password.trim()) payload.password = form.password;
+      const payload = { nombre: form.nombre, email: form.email, rol: form.rol };
+      if (form.contrasena.trim()) payload.contrasena = form.contrasena;
 
       if (isEdit) {
-        await updateUser(editUser.id, payload);
+        await actualizarUsuario(editUser.id, payload);
       } else {
-        await createUser(payload);
+        await crearUsuario(payload);
       }
       navigation.goBack();
     } catch (err) {
@@ -67,8 +67,8 @@ export default function UserFormScreen({ route, navigation }) {
 
         <FormInput
           label="Nombre completo"
-          value={form.name}
-          onChangeText={set('name')}
+          value={form.nombre}
+          onChangeText={set('nombre')}
           placeholder="Ej. Dr. Carlos López"
           icon="person-outline"
         />
@@ -83,8 +83,8 @@ export default function UserFormScreen({ route, navigation }) {
         />
         <FormInput
           label={isEdit ? 'Nueva contraseña (opcional)' : 'Contraseña'}
-          value={form.password}
-          onChangeText={set('password')}
+          value={form.contrasena}
+          onChangeText={set('contrasena')}
           placeholder={isEdit ? 'Dejar vacío para no cambiar' : 'Mínimo 8 caracteres'}
           icon="lock-closed-outline"
           secureTextEntry={!showPassword}
@@ -96,7 +96,7 @@ export default function UserFormScreen({ route, navigation }) {
       <View style={[styles.card, { backgroundColor: colors.surface }, SHADOWS.md(isDark)]}>
         <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>ROL</Text>
         {ROLES.map((r) => {
-          const active = form.role === r.value;
+          const active = form.rol === r.value;
           return (
             <TouchableOpacity
               key={r.value}
@@ -105,7 +105,7 @@ export default function UserFormScreen({ route, navigation }) {
                 { borderColor: colors.border },
                 active && { borderColor: colors.primary, backgroundColor: colors.primaryLight },
               ]}
-              onPress={() => set('role')(r.value)}
+              onPress={() => set('rol')(r.value)}
               activeOpacity={0.7}
             >
               <View style={[styles.roleIcon, { backgroundColor: active ? colors.primary : colors.background }]}>

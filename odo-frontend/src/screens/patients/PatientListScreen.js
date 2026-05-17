@@ -1,9 +1,10 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
   View, Text, FlatList, StyleSheet,
-  TouchableOpacity, TextInput, RefreshControl,
+  TouchableOpacity, TextInput, RefreshControl, Alert, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../../context/ThemeContext';
 import { SHADOWS } from '../../constants/theme';
 import PatientListSkeleton from '../../components/common/PatientCardSkeleton';
@@ -17,28 +18,38 @@ function avatarColor(name) {
 
 export default function PatientListScreen({ navigation }) {
   const { colors, isDark } = useTheme();
-  const [patients, setPatients] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [patients,   setPatients]   = useState([]);
+  const [loading,    setLoading]    = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [search, setSearch] = useState('');
+  const [search,     setSearch]     = useState('');
+  const initialized = useRef(false);
 
   const fetchPatients = useCallback(async () => {
-    try { setPatients(await getPatients()); }
-    catch { setPatients([]); }
-    finally { setLoading(false); setRefreshing(false); }
+    if (!initialized.current) setLoading(true);
+    else setRefreshing(true);
+    try {
+      setPatients(await getPatients());
+    } catch {
+      setPatients([]);
+      if (!initialized.current)
+        Alert.alert('Error', 'No se pudieron cargar los pacientes.');
+    } finally {
+      initialized.current = true;
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, []);
 
-  useEffect(() => { fetchPatients(); }, []);
-  const onRefresh = () => { setRefreshing(true); fetchPatients(); };
+  useFocusEffect(useCallback(() => { fetchPatients(); }, [fetchPatients]));
 
   const filtered = patients.filter((p) =>
-    `${p.firstName} ${p.lastName}`.toLowerCase().includes(search.toLowerCase()) ||
+    `${p.nombre} ${p.apellido}`.toLowerCase().includes(search.toLowerCase()) ||
     (p.dni || '').includes(search)
   );
 
   const renderItem = ({ item }) => {
-    const color = avatarColor(item.firstName);
-    const initials = `${item.firstName?.[0] ?? ''}${item.lastName?.[0] ?? ''}`.toUpperCase();
+    const color    = avatarColor(item.nombre);
+    const initials = `${item.nombre?.[0] ?? ''}${item.apellido?.[0] ?? ''}`.toUpperCase();
     return (
       <TouchableOpacity
         style={[styles.card, { backgroundColor: colors.surface }, SHADOWS.sm(isDark)]}
@@ -49,12 +60,12 @@ export default function PatientListScreen({ navigation }) {
           <Text style={[styles.avatarText, { color }]}>{initials}</Text>
         </View>
         <View style={styles.info}>
-          <Text style={[styles.name, { color: colors.textPrimary }]}>{item.firstName} {item.lastName}</Text>
+          <Text style={[styles.name, { color: colors.textPrimary }]}>{item.nombre} {item.apellido}</Text>
           <View style={styles.meta}>
-            {item.phone ? (
+            {item.telefono ? (
               <>
                 <Ionicons name="call-outline" size={11} color={colors.textMuted} />
-                <Text style={[styles.metaText, { color: colors.textMuted }]}>{item.phone}</Text>
+                <Text style={[styles.metaText, { color: colors.textMuted }]}>{item.telefono}</Text>
               </>
             ) : item.email ? (
               <>
@@ -87,6 +98,15 @@ export default function PatientListScreen({ navigation }) {
             <Ionicons name="close-circle" size={18} color={colors.textMuted} />
           </TouchableOpacity>
         )}
+        {Platform.OS === 'web' && (
+          <TouchableOpacity
+            onPress={fetchPatients}
+            activeOpacity={0.7}
+            style={[styles.refreshBtn, { backgroundColor: colors.primaryLight }]}
+          >
+            <Ionicons name="refresh-outline" size={17} color={colors.primary} />
+          </TouchableOpacity>
+        )}
       </View>
 
       {!loading && (
@@ -105,12 +125,18 @@ export default function PatientListScreen({ navigation }) {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.list}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={fetchPatients}
+              tintColor={colors.primary}
+            />
           }
           ListEmptyComponent={
             <View style={styles.emptyBox}>
               <Ionicons name="people-outline" size={48} color={colors.border} />
-              <Text style={[styles.emptyText, { color: colors.textMuted }]}>No se encontraron pacientes</Text>
+              <Text style={[styles.emptyText, { color: colors.textMuted }]}>
+                {search ? 'Sin resultados para la busqueda' : 'No se encontraron pacientes'}
+              </Text>
             </View>
           }
         />
@@ -131,6 +157,7 @@ const styles = StyleSheet.create({
   container:   { flex: 1 },
   searchWrap:  { flexDirection: 'row', alignItems: 'center', gap: 10, margin: 16, marginBottom: 8, paddingHorizontal: 14, height: 46, borderRadius: 12, borderWidth: 1 },
   searchInput: { flex: 1, fontSize: 14 },
+  refreshBtn:  { width: 30, height: 30, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
   count:       { fontSize: 12, paddingHorizontal: 20, marginBottom: 8, fontWeight: '500' },
   list:        { paddingHorizontal: 16, paddingBottom: 100 },
   card:        { borderRadius: 14, padding: 14, marginBottom: 10, flexDirection: 'row', alignItems: 'center', gap: 12 },

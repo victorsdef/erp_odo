@@ -7,7 +7,7 @@ export default function FormInput({
   label, value, onChangeText, placeholder,
   icon, keyboardType = 'default', secureTextEntry,
   multiline, numberOfLines = 1, editable = true,
-  onPress, rightIcon, onRightIconPress, error,
+  onPress, rightIcon, onRightIconPress, error, required,
 }) {
   const { colors } = useTheme();
   const [focused, setFocused] = useState(false);
@@ -17,7 +17,12 @@ export default function FormInput({
 
   return (
     <View style={styles.wrap}>
-      {label && <Text style={[styles.label, { color: colors.textSecondary }]}>{label}</Text>}
+      {label && (
+        <Text style={[styles.label, { color: colors.textSecondary }]}>
+          {label}
+          {required && <Text style={{ color: colors.danger }}> *</Text>}
+        </Text>
+      )}
       <Container
         {...containerProps}
         style={[

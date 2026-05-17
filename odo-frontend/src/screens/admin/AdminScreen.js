@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../../context/ThemeContext';
 import { SHADOWS } from '../../constants/theme';
-import { getUsers, toggleActive } from '../../services/adminService';
+import { getUsuarios, alternarActivo } from '../../services/adminService';
 
 const ROLE_META = {
   ADMIN:        { label: 'Admin',         color: '#8B5CF6', bg: '#F5F3FF' },
@@ -27,7 +27,7 @@ export default function AdminScreen({ navigation }) {
 
   const load = useCallback(() => {
     setLoading(true);
-    getUsers()
+    getUsuarios()
       .then(setUsers)
       .catch(() => Alert.alert('Error', 'No se pudieron cargar los usuarios'))
       .finally(() => setLoading(false));
@@ -36,17 +36,17 @@ export default function AdminScreen({ navigation }) {
   useFocusEffect(load);
 
   const handleToggle = (user) => {
-    const action = user.active ? 'desactivar' : 'activar';
+    const action = user.activo ? 'desactivar' : 'activar';
     Alert.alert(
       `¿${action.charAt(0).toUpperCase() + action.slice(1)} usuario?`,
-      `${user.name} quedará ${user.active ? 'inactivo' : 'activo'}.`,
+      `${user.nombre} quedará ${user.activo ? 'inactivo' : 'activo'}.`,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
           text: 'Confirmar',
-          style: user.active ? 'destructive' : 'default',
+          style: user.activo ? 'destructive' : 'default',
           onPress: () =>
-            toggleActive(user.id)
+            alternarActivo(user.id)
               .then((updated) =>
                 setUsers((prev) => prev.map((u) => (u.id === updated.id ? updated : u)))
               )
@@ -56,8 +56,8 @@ export default function AdminScreen({ navigation }) {
     );
   };
 
-  const byRole = (role) => users.filter((u) => u.role === role);
-  const active = users.filter((u) => u.active).length;
+  const byRole = (role) => users.filter((u) => u.rol === role);
+  const active = users.filter((u) => u.activo).length;
 
   const STATS = [
     { label: 'Dentistas',      count: byRole('DENTIST').length,      color: colors.primary,   bg: colors.primaryLight,   icon: 'medical' },
@@ -133,19 +133,19 @@ export default function AdminScreen({ navigation }) {
           </Text>
 
           {users.map((user) => {
-            const meta = ROLE_META[user.role] ?? ROLE_META.RECEPTIONIST;
+            const meta = ROLE_META[user.rol] ?? ROLE_META.RECEPTIONIST;
             return (
               <View key={user.id} style={[styles.card, { backgroundColor: colors.surface }, SHADOWS.sm(isDark)]}>
                 {/* Avatar */}
                 <View style={[styles.avatar, { backgroundColor: meta.bg }]}>
-                  <Text style={[styles.avatarText, { color: meta.color }]}>{initials(user.name)}</Text>
+                  <Text style={[styles.avatarText, { color: meta.color }]}>{initials(user.nombre)}</Text>
                 </View>
 
                 {/* Info */}
                 <View style={styles.info}>
                   <View style={styles.nameRow}>
                     <Text style={[styles.name, { color: colors.textPrimary }]} numberOfLines={1}>
-                      {user.name}
+                      {user.nombre}
                     </Text>
                     <View style={[styles.roleBadge, { backgroundColor: meta.bg }]}>
                       <Text style={[styles.roleText, { color: meta.color }]}>{meta.label}</Text>
@@ -155,9 +155,9 @@ export default function AdminScreen({ navigation }) {
                     {user.email}
                   </Text>
                   <View style={styles.statusRow}>
-                    <View style={[styles.dot, { backgroundColor: user.active ? colors.secondary : colors.danger }]} />
+                    <View style={[styles.dot, { backgroundColor: user.activo ? colors.secondary : colors.danger }]} />
                     <Text style={[styles.statusText, { color: colors.textMuted }]}>
-                      {user.active ? 'Activo' : 'Inactivo'}
+                      {user.activo ? 'Activo' : 'Inactivo'}
                     </Text>
                   </View>
                 </View>
@@ -172,14 +172,14 @@ export default function AdminScreen({ navigation }) {
                     <Ionicons name="pencil" size={15} color={colors.primary} />
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={[styles.actionBtn, { backgroundColor: user.active ? colors.dangerLight : colors.secondaryLight }]}
+                    style={[styles.actionBtn, { backgroundColor: user.activo ? colors.dangerLight : colors.secondaryLight }]}
                     onPress={() => handleToggle(user)}
                     activeOpacity={0.7}
                   >
                     <Ionicons
-                      name={user.active ? 'ban-outline' : 'checkmark-circle-outline'}
+                      name={user.activo ? 'ban-outline' : 'checkmark-circle-outline'}
                       size={15}
-                      color={user.active ? colors.danger : colors.secondary}
+                      color={user.activo ? colors.danger : colors.secondary}
                     />
                   </TouchableOpacity>
                 </View>

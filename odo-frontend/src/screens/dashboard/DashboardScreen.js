@@ -1,12 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useState, useCallback, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, RefreshControl, Platform } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { SHADOWS } from '../../constants/theme';
 import DashboardSkeleton from '../../components/common/DashboardSkeleton';
 import { getPatients } from '../../services/patientService';
-import { getAppointments } from '../../services/appointmentService';
+import { getAppointments, getAppointmentsByPatient } from '../../services/appointmentService';
 
 const STATUS_COLOR_KEY = {
   SCHEDULED: 'warning',
@@ -27,49 +28,92 @@ const STATUS_LABEL = {
 export default function DashboardScreen({ navigation }) {
   const { user, logout } = useAuth();
   const { colors, isDark, toggleTheme } = useTheme();
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({ patients: 0, today: 0, pending: 0, completed: 0 });
-  const [upcoming, setUpcoming] = useState([]);
+  const [loading,    setLoading]    = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [stats,      setStats]      = useState({ patients: 0, today: 0, pending: 0, completed: 0 });
+  const [upcoming,   setUpcoming]   = useState([]);
+  const initialized = useRef(false);
 
-  const STAT_CARDS = [
-    { key: 'patients',  label: 'Pacientes',   icon: 'people',           color: colors.primary,   bg: colors.primaryLight },
-    { key: 'today',     label: 'Hoy',          icon: 'today',            color: colors.secondary, bg: colors.secondaryLight },
-    { key: 'pending',   label: 'Pendientes',   icon: 'time',             color: colors.warning,   bg: colors.warningLight },
-    { key: 'completed', label: 'Completadas',  icon: 'checkmark-circle', color: colors.purple,    bg: colors.purpleLight },
-  ];
+  const isPatient = user?.rol === 'PATIENT';
 
-  useEffect(() => {
-    Promise.all([getPatients(), getAppointments()])
-      .then(([patients, appointments]) => {
+  const STAT_CARDS = isPatient
+    ? [
+        { key: 'today',     label: 'Hoy',         icon: 'today',            color: colors.secondary, bg: colors.secondaryLight },
+        { key: 'pending',   label: 'Pendientes',  icon: 'time',             color: colors.warning,   bg: colors.warningLight },
+        { key: 'completed', label: 'Completadas', icon: 'checkmark-circle', color: colors.purple,    bg: colors.purpleLight },
+      ]
+    : [
+        { key: 'patients',  label: 'Pacientes',   icon: 'people',           color: colors.primary,   bg: colors.primaryLight },
+        { key: 'today',     label: 'Hoy',         icon: 'today',            color: colors.secondary, bg: colors.secondaryLight },
+        { key: 'pending',   label: 'Pendientes',  icon: 'time',             color: colors.warning,   bg: colors.warningLight },
+        { key: 'completed', label: 'Completadas', icon: 'checkmark-circle', color: colors.purple,    bg: colors.purpleLight },
+      ];
+
+  const loadData = useCallback(async () => {
+    if (!initialized.current) setLoading(true);
+    else setRefreshing(true);
+    try {
+      if (isPatient && user?.pacienteId) {
+        const appointments = await getAppointmentsByPatient(user.pacienteId);
+        const today = new Date().toDateString();
+        setStats({
+          today:     appointments.filter((a) => new Date(a.fechaHora).toDateString() === today).length,
+          pending:   appointments.filter((a) => a.estado === 'SCHEDULED').length,
+          completed: appointments.filter((a) => a.estado === 'COMPLETED').length,
+        });
+        setUpcoming(appointments.filter((a) => a.estado === 'SCHEDULED' || a.estado === 'CONFIRMED').slice(0, 5));
+      } else {
+        const [patients, appointments] = await Promise.all([getPatients(), getAppointments()]);
         const today = new Date().toDateString();
         setStats({
           patients:  patients.length,
-          today:     appointments.filter((a) => new Date(a.dateTime).toDateString() === today).length,
-          pending:   appointments.filter((a) => a.status === 'SCHEDULED').length,
-          completed: appointments.filter((a) => a.status === 'COMPLETED').length,
+          today:     appointments.filter((a) => new Date(a.fechaHora).toDateString() === today).length,
+          pending:   appointments.filter((a) => a.estado === 'SCHEDULED').length,
+          completed: appointments.filter((a) => a.estado === 'COMPLETED').length,
         });
         setUpcoming(appointments.slice(0, 5));
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+      }
+    } catch {}
+    finally {
+      initialized.current = true;
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [isPatient, user?.pacienteId]);
+
+  useFocusEffect(useCallback(() => { loadData(); }, [loadData]));
 
   if (loading) return <DashboardSkeleton />;
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      style={[styles.container, { backgroundColor: colors.background }]}
+      showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={loadData} tintColor={colors.primary} />
+      }
+    >
 
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <TouchableOpacity activeOpacity={0.7} onPress={() => navigation.navigate('Profile')}>
           <Text style={[styles.greeting, { color: colors.textPrimary }]}>
-            Hola, {user?.name?.split(' ')[0]}
+            Hola, {user?.nombre?.split(' ')[0]}
           </Text>
           <Text style={[styles.role, { color: colors.textSecondary }]}>
-            {user?.role}  · Ver perfil
+            {user?.rol}  · Ver perfil
           </Text>
         </TouchableOpacity>
         <View style={styles.headerActions}>
+          {Platform.OS === 'web' && (
+            <TouchableOpacity
+              style={[styles.themeBtn, { backgroundColor: colors.primaryLight }]}
+              onPress={loadData}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="refresh-outline" size={18} color={colors.primary} />
+            </TouchableOpacity>
+          )}
           <TouchableOpacity
             style={[styles.themeBtn, { backgroundColor: colors.primaryLight }]}
             onPress={toggleTheme}
@@ -116,23 +160,23 @@ export default function DashboardScreen({ navigation }) {
         </View>
       ) : (
         upcoming.map((appt) => {
-          const statusColor = colors[STATUS_COLOR_KEY[appt.status]] ?? colors.textMuted;
+          const statusColor = colors[STATUS_COLOR_KEY[appt.estado]] ?? colors.textMuted;
           return (
             <View key={appt.id} style={[styles.apptRow, { backgroundColor: colors.surface }, SHADOWS.sm(isDark)]}>
               <View style={[styles.dateBox, { backgroundColor: colors.primaryLight }]}>
-                <Text style={[styles.dateDay, { color: colors.primary }]}>{new Date(appt.dateTime).getDate()}</Text>
+                <Text style={[styles.dateDay, { color: colors.primary }]}>{new Date(appt.fechaHora).getDate()}</Text>
                 <Text style={[styles.dateMon, { color: colors.primary }]}>
-                  {new Date(appt.dateTime).toLocaleString('es', { month: 'short' }).toUpperCase()}
+                  {new Date(appt.fechaHora).toLocaleString('es', { month: 'short' }).toUpperCase()}
                 </Text>
               </View>
               <View style={styles.apptInfo}>
                 <Text style={[styles.apptName, { color: colors.textPrimary }]} numberOfLines={1}>
-                  {appt.patient?.firstName} {appt.patient?.lastName}
+                  {appt.paciente?.nombre} {appt.paciente?.apellido}
                 </Text>
                 <View style={styles.apptMeta}>
                   <Ionicons name="time-outline" size={12} color={colors.textMuted} />
                   <Text style={[styles.apptTime, { color: colors.textMuted }]}>
-                    {new Date(appt.dateTime).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}
+                    {new Date(appt.fechaHora).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}
                   </Text>
                 </View>
               </View>

@@ -1,9 +1,9 @@
-services:
+version: '3.9'
 
-  postgres:
+services:
+  db:
     image: postgres:16-alpine
-    container_name: odo_postgres
-    restart: unless-stopped
+    container_name: odo_db
     environment:
       POSTGRES_DB: odo_db
       POSTGRES_USER: odo_user
@@ -11,40 +11,53 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-    networks:
-      - odo_network
+      - odo_pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U odo_user -d odo_db"]
       interval: 10s
       timeout: 5s
-      retries: 10
-      start_period: 30s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: odo_minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: odo_minio_user
+      MINIO_ROOT_PASSWORD: odo_minio_password
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - odo_minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   backend:
-    build:
-      context: ../odo-backend
-      dockerfile: Dockerfile
+    build: ../odo-backend
     container_name: odo_backend
-    restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
+    ports:
+      - "8080:8080"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/odo_db
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/odo_db
       SPRING_DATASOURCE_USERNAME: odo_user
       SPRING_DATASOURCE_PASSWORD: odo_password
       JWT_SECRET: odo_super_secret_key_must_be_at_least_256_bits_long_for_security
       JWT_EXPIRATION: 86400000
-    ports:
-      - "8080:8080"
-    networks:
-      - odo_network
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: odo_minio_user
+      MINIO_SECRET_KEY: odo_minio_password
+      MINIO_BUCKET: odo-perfil
+    depends_on:
+      db:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    restart: on-failure
 
 volumes:
-  postgres_data:
-
-networks:
-  odo_network:
-    driver: bridge
+  odo_pgdata:
+  odo_minio_data:

@@ -14,7 +14,7 @@ import {
   toggleTreatmentActive, deleteTreatment,
 } from '../../services/treatmentService';
 
-const EMPTY_FORM = { name: '', description: '', defaultPrice: '', durationMinutes: '' };
+const EMPTY_FORM = { nombre: '', descripcion: '', precioBase: '', duracionMinutos: '' };
 
 export default function TreatmentScreen() {
   const { colors, isDark } = useTheme();
@@ -46,25 +46,25 @@ export default function TreatmentScreen() {
   const openEdit = (t) => {
     setEditing(t);
     setForm({
-      name: t.name,
-      description: t.description ?? '',
-      defaultPrice: String(t.defaultPrice ?? ''),
-      durationMinutes: String(t.durationMinutes ?? ''),
+      nombre: t.nombre,
+      descripcion: t.descripcion ?? '',
+      precioBase: String(t.precioBase ?? ''),
+      duracionMinutos: String(t.duracionMinutos ?? ''),
     });
     setShowModal(true);
   };
 
   const handleSave = async () => {
-    if (!form.name.trim()) return Alert.alert('Requerido', 'Ingresa el nombre del tratamiento');
-    const price = parseFloat(form.defaultPrice);
+    if (!form.nombre.trim()) return Alert.alert('Requerido', 'Ingresa el nombre del tratamiento');
+    const price = parseFloat(form.precioBase);
     if (isNaN(price) || price <= 0) return Alert.alert('Requerido', 'Ingresa un precio válido');
     setSaving(true);
     try {
       const payload = {
-        name: form.name.trim(),
-        description: form.description.trim() || null,
-        defaultPrice: price,
-        durationMinutes: parseInt(form.durationMinutes) || null,
+        nombre: form.nombre.trim(),
+        descripcion: form.descripcion.trim() || null,
+        precioBase: price,
+        duracionMinutos: parseInt(form.duracionMinutos) || null,
       };
       if (editing) {
         const updated = await updateTreatment(editing.id, payload);
@@ -83,8 +83,8 @@ export default function TreatmentScreen() {
 
   const handleToggle = (t) => {
     Alert.alert(
-      t.active ? 'Desactivar tratamiento' : 'Activar tratamiento',
-      `¿${t.active ? 'Desactivar' : 'Activar'} "${t.name}"?`,
+      t.activo ? 'Desactivar tratamiento' : 'Activar tratamiento',
+      `¿${t.activo ? 'Desactivar' : 'Activar'} "${t.nombre}"?`,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -103,7 +103,7 @@ export default function TreatmentScreen() {
   const handleDelete = (t) => {
     Alert.alert(
       'Eliminar tratamiento',
-      `¿Eliminar "${t.name}"? Esta acción no se puede deshacer.`,
+      `¿Eliminar "${t.nombre}"? Esta acción no se puede deshacer.`,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -149,30 +149,30 @@ export default function TreatmentScreen() {
           ) : (
             treatments.map((t) => (
               <View key={t.id} style={[styles.card, { backgroundColor: colors.surface }, SHADOWS.sm(isDark)]}>
-                <View style={[styles.iconBox, { backgroundColor: t.active ? colors.primaryLight : colors.border + '30' }]}>
-                  <Ionicons name="medical" size={20} color={t.active ? colors.primary : colors.textMuted} />
+                <View style={[styles.iconBox, { backgroundColor: t.activo ? colors.primaryLight : colors.border + '30' }]}>
+                  <Ionicons name="medical" size={20} color={t.activo ? colors.primary : colors.textMuted} />
                 </View>
 
                 <View style={styles.info}>
                   <View style={styles.nameRow}>
                     <Text style={[styles.name, { color: colors.textPrimary }]} numberOfLines={1}>
-                      {t.name}
+                      {t.nombre}
                     </Text>
-                    {!t.active && (
+                    {!t.activo && (
                       <View style={[styles.badge, { backgroundColor: colors.dangerLight }]}>
                         <Text style={[styles.badgeText, { color: colors.danger }]}>Inactivo</Text>
                       </View>
                     )}
                   </View>
-                  {t.description ? (
+                  {t.descripcion ? (
                     <Text style={[styles.desc, { color: colors.textSecondary }]} numberOfLines={1}>
-                      {t.description}
+                      {t.descripcion}
                     </Text>
                   ) : null}
                   <View style={styles.metaRow}>
-                    <Text style={[styles.price, { color: colors.primary }]}>S/ {parseFloat(t.defaultPrice).toFixed(2)}</Text>
-                    {t.durationMinutes ? (
-                      <Text style={[styles.duration, { color: colors.textMuted }]}>· {t.durationMinutes} min</Text>
+                    <Text style={[styles.price, { color: colors.primary }]}>S/ {parseFloat(t.precioBase).toFixed(2)}</Text>
+                    {t.duracionMinutos ? (
+                      <Text style={[styles.duration, { color: colors.textMuted }]}>· {t.duracionMinutos} min</Text>
                     ) : null}
                   </View>
                 </View>
@@ -186,14 +186,14 @@ export default function TreatmentScreen() {
                     <Ionicons name="pencil" size={15} color={colors.primary} />
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={[styles.actionBtn, { backgroundColor: t.active ? colors.dangerLight : colors.secondaryLight }]}
+                    style={[styles.actionBtn, { backgroundColor: t.activo ? colors.dangerLight : colors.secondaryLight }]}
                     onPress={() => handleToggle(t)}
                     activeOpacity={0.7}
                   >
                     <Ionicons
-                      name={t.active ? 'ban-outline' : 'checkmark-circle-outline'}
+                      name={t.activo ? 'ban-outline' : 'checkmark-circle-outline'}
                       size={15}
-                      color={t.active ? colors.danger : colors.secondary}
+                      color={t.activo ? colors.danger : colors.secondary}
                     />
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -225,17 +225,17 @@ export default function TreatmentScreen() {
               </View>
 
               <ScrollView showsVerticalScrollIndicator={false}>
-                <FormInput label="Nombre *" value={form.name} onChangeText={set('name')}
+                <FormInput label="Nombre *" value={form.nombre} onChangeText={set('nombre')}
                   placeholder="Ej. Limpieza dental" icon="medical-outline" />
-                <FormInput label="Descripción" value={form.description} onChangeText={set('description')}
+                <FormInput label="Descripción" value={form.descripcion} onChangeText={set('descripcion')}
                   placeholder="Descripción opcional..." icon="document-text-outline" />
                 <View style={styles.row}>
                   <View style={{ flex: 1 }}>
-                    <FormInput label="Precio (S/) *" value={form.defaultPrice} onChangeText={set('defaultPrice')}
+                    <FormInput label="Precio (S/) *" value={form.precioBase} onChangeText={set('precioBase')}
                       placeholder="0.00" icon="cash-outline" keyboardType="decimal-pad" />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <FormInput label="Duración (min)" value={form.durationMinutes} onChangeText={set('durationMinutes')}
+                    <FormInput label="Duración (min)" value={form.duracionMinutos} onChangeText={set('duracionMinutos')}
                       placeholder="30" icon="time-outline" keyboardType="number-pad" />
                   </View>
                 </View>

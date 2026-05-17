@@ -128,7 +128,8 @@ function TabLabel({ label, focused }) {
 function BottomTabsLayout() {
   const { colors } = useTheme();
   const { user }   = useAuth();
-  const isAdmin    = user?.role === 'ADMIN';
+  const isAdmin    = user?.rol === 'ADMIN';
+  const isPatient  = user?.rol === 'PATIENT';
 
   return (
     <Tab.Navigator
@@ -154,20 +155,22 @@ function BottomTabsLayout() {
           tabBarLabel: ({ focused }) => <TabLabel label="Inicio" focused={focused} />,
         }}
       />
-      <Tab.Screen
-        name="Patients"
-        component={PatientsStack}
-        options={{
-          tabBarIcon:  ({ focused, color }) => <TabIcon name={focused ? 'people' : 'people-outline'} focused={focused} color={color} />,
-          tabBarLabel: ({ focused }) => <TabLabel label="Pacientes" focused={focused} />,
-        }}
-      />
+      {!isPatient && (
+        <Tab.Screen
+          name="Patients"
+          component={PatientsStack}
+          options={{
+            tabBarIcon:  ({ focused, color }) => <TabIcon name={focused ? 'people' : 'people-outline'} focused={focused} color={color} />,
+            tabBarLabel: ({ focused }) => <TabLabel label="Pacientes" focused={focused} />,
+          }}
+        />
+      )}
       <Tab.Screen
         name="Appointments"
         component={AppointmentsStack}
         options={{
           tabBarIcon:  ({ focused, color }) => <TabIcon name={focused ? 'calendar' : 'calendar-outline'} focused={focused} color={color} />,
-          tabBarLabel: ({ focused }) => <TabLabel label="Agenda" focused={focused} />,
+          tabBarLabel: ({ focused }) => <TabLabel label={isPatient ? 'Mis Citas' : 'Agenda'} focused={focused} />,
         }}
       />
       <Tab.Screen
@@ -175,7 +178,7 @@ function BottomTabsLayout() {
         component={BillingStack}
         options={{
           tabBarIcon:  ({ focused, color }) => <TabIcon name={focused ? 'receipt' : 'receipt-outline'} focused={focused} color={color} />,
-          tabBarLabel: ({ focused }) => <TabLabel label="Cobros" focused={focused} />,
+          tabBarLabel: ({ focused }) => <TabLabel label={isPatient ? 'Mis Pagos' : 'Cobros'} focused={focused} />,
         }}
       />
       {isAdmin && (
@@ -196,12 +199,13 @@ function SidebarLayout() {
   const { colors } = useTheme();
   const { user }   = useAuth();
   const { isDesktop } = useBreakpoint();
-  const isAdmin    = user?.role === 'ADMIN';
+  const isAdmin    = user?.rol === 'ADMIN';
+  const isPatient  = user?.rol === 'PATIENT';
   const [activeRoute, setActiveRoute] = useState('Dashboard');
 
   const SCREENS = {
     Dashboard:    <DashboardStack />,
-    Patients:     <PatientsStack />,
+    ...(!isPatient && { Patients: <PatientsStack /> }),
     Appointments: <AppointmentsStack />,
     Billing:      <BillingStack />,
     Profile:      <ProfileScreen />,
