@@ -50,10 +50,9 @@ public class MinioServicio {
         }
     }
 
-    public String subirFoto(MultipartFile archivo) throws Exception {
+    public String subirArchivo(MultipartFile archivo, String carpeta) throws Exception {
         String extension = obtenerExtension(archivo.getOriginalFilename());
-        String nombre    = "perfil/" + UUID.randomUUID() + extension;
-
+        String nombre    = carpeta + "/" + UUID.randomUUID() + extension;
         client.putObject(
                 PutObjectArgs.builder()
                         .bucket(bucket)
@@ -65,13 +64,21 @@ public class MinioServicio {
         return nombre;
     }
 
-    public InputStream obtenerFoto(String nombre) throws Exception {
+    public String subirFoto(MultipartFile archivo) throws Exception {
+        return subirArchivo(archivo, "perfil");
+    }
+
+    public InputStream obtenerArchivo(String nombre) throws Exception {
         return client.getObject(
                 GetObjectArgs.builder()
                         .bucket(bucket)
                         .object(nombre)
                         .build()
         );
+    }
+
+    public InputStream obtenerFoto(String nombre) throws Exception {
+        return obtenerArchivo(nombre);
     }
 
     private String obtenerExtension(String filename) {

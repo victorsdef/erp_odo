@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  ActivityIndicator, Alert,
+  ActivityIndicator, Alert, Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { API_BASE_URL } from '../../constants/api';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../../context/ThemeContext';
 import { SHADOWS } from '../../constants/theme';
@@ -127,6 +128,20 @@ export default function AdminScreen({ navigation }) {
             </TouchableOpacity>
           </View>
 
+          <View style={styles.toolsRow}>
+            <TouchableOpacity
+              style={[styles.toolCard, { backgroundColor: colors.surface }, SHADOWS.sm(isDark)]}
+              onPress={() => navigation.navigate('SystemConfig')}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.toolIcon, { backgroundColor: colors.warningLight }]}>
+                <Ionicons name="settings-outline" size={22} color={colors.warning} />
+              </View>
+              <Text style={[styles.toolLabel, { color: colors.textPrimary }]}>Configuracion</Text>
+              <Text style={[styles.toolSub, { color: colors.textMuted }]}>Nombre y logo del sistema</Text>
+            </TouchableOpacity>
+          </View>
+
           {/* User list */}
           <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
             Usuarios ({users.length})
@@ -137,9 +152,16 @@ export default function AdminScreen({ navigation }) {
             return (
               <View key={user.id} style={[styles.card, { backgroundColor: colors.surface }, SHADOWS.sm(isDark)]}>
                 {/* Avatar */}
-                <View style={[styles.avatar, { backgroundColor: meta.bg }]}>
-                  <Text style={[styles.avatarText, { color: meta.color }]}>{initials(user.nombre)}</Text>
-                </View>
+                {user.fotoPerfil ? (
+                  <Image
+                    source={{ uri: `${API_BASE_URL}/profile/photo/${user.fotoPerfil}` }}
+                    style={styles.avatar}
+                  />
+                ) : (
+                  <View style={[styles.avatar, { backgroundColor: meta.bg }]}>
+                    <Text style={[styles.avatarText, { color: meta.color }]}>{initials(user.nombre)}</Text>
+                  </View>
+                )}
 
                 {/* Info */}
                 <View style={styles.info}>

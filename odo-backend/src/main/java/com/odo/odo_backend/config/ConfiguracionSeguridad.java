@@ -36,6 +36,9 @@ public class ConfiguracionSeguridad {
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/profile/photo/**").permitAll()
+                        .requestMatchers("/api/admin/config").permitAll()
+                        .requestMatchers("/api/admin/config/logo/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(filtroJwt, UsernamePasswordAuthenticationFilter.class)

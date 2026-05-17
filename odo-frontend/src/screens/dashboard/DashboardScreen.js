@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, RefreshControl, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, RefreshControl, Platform, Image } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
@@ -8,6 +8,7 @@ import { SHADOWS } from '../../constants/theme';
 import DashboardSkeleton from '../../components/common/DashboardSkeleton';
 import { getPatients } from '../../services/patientService';
 import { getAppointments, getAppointmentsByPatient } from '../../services/appointmentService';
+import { API_BASE_URL } from '../../constants/api';
 
 const STATUS_COLOR_KEY = {
   SCHEDULED: 'warning',
@@ -96,12 +97,21 @@ export default function DashboardScreen({ navigation }) {
 
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-        <TouchableOpacity activeOpacity={0.7} onPress={() => navigation.navigate('Profile')}>
-          <Text style={[styles.greeting, { color: colors.textPrimary }]}>
-            Hola, {user?.nombre?.split(' ')[0]}
-          </Text>
-          <Text style={[styles.role, { color: colors.textSecondary }]}>
-            {user?.rol}  · Ver perfil
+        <TouchableOpacity activeOpacity={0.7} onPress={() => navigation.navigate('Profile')} style={styles.headerLeft}>
+          {user?.fotoPerfil ? (
+            <Image
+              source={{ uri: `${API_BASE_URL}/profile/photo/${user.fotoPerfil}` }}
+              style={styles.headerAvatar}
+            />
+          ) : (
+            <View style={[styles.headerAvatar, styles.headerAvatarFallback, { backgroundColor: colors.primaryLight }]}>
+              <Text style={[styles.headerAvatarText, { color: colors.primary }]}>
+                {user?.nombre?.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase()}
+              </Text>
+            </View>
+          )}
+          <Text style={[styles.greeting, { color: colors.textPrimary }]} numberOfLines={1}>
+            {user?.nombre?.split(' ')[0]}
           </Text>
         </TouchableOpacity>
         <View style={styles.headerActions}>
@@ -196,10 +206,14 @@ export default function DashboardScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container:    { flex: 1 },
-  header:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16, borderBottomWidth: 1 },
-  greeting:     { fontSize: 22, fontWeight: '700' },
-  role:         { fontSize: 12, marginTop: 2, textTransform: 'uppercase', letterSpacing: 0.5 },
+  container:           { flex: 1 },
+  header:              { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16, borderBottomWidth: 1 },
+  headerLeft:          { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
+  headerAvatar:        { width: 44, height: 44, borderRadius: 22 },
+  headerAvatarFallback:{ justifyContent: 'center', alignItems: 'center' },
+  headerAvatarText:    { fontSize: 16, fontWeight: '800' },
+  greeting:            { fontSize: 18, fontWeight: '700' },
+  role:                { fontSize: 12, marginTop: 2, textTransform: 'uppercase', letterSpacing: 0.5 },
   headerActions:{ flexDirection: 'row', alignItems: 'center', gap: 8 },
   themeBtn:     { width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
   logoutBtn:    { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 },

@@ -1,8 +1,10 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
+import { useSystemConfig } from '../../context/SystemConfigContext';
+import { API_BASE_URL } from '../../constants/api';
 
 const NAV_ITEMS = [
   { route: 'Dashboard',    label: 'Inicio',    icon: 'home-outline',     iconActive: 'home' },
@@ -27,17 +29,23 @@ function initials(name = '') {
 export default function Sidebar({ activeRoute, onNavigate, collapsed = false, isAdmin = false }) {
   const { colors, isDark, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
+  const { config } = useSystemConfig();
   const isPatient = user?.rol === 'PATIENT';
+  const logoUri = config.logoArchivo ? `${API_BASE_URL}/admin/config/logo/${config.logoArchivo}` : null;
 
   return (
     <View style={[styles.sidebar, { backgroundColor: colors.sidebar, width: collapsed ? 72 : 220 }]}>
       {/* Logo */}
       <View style={styles.logoArea}>
-        <View style={[styles.logoIcon, { backgroundColor: colors.primary }]}>
-          <Ionicons name="tooth-outline" size={22} color="#fff" />
-        </View>
+        {logoUri ? (
+          <Image source={{ uri: logoUri }} style={styles.logoIcon} />
+        ) : (
+          <View style={[styles.logoIcon, { backgroundColor: colors.primary }]}>
+            <Ionicons name="tooth-outline" size={22} color="#fff" />
+          </View>
+        )}
         {!collapsed && (
-          <Text style={[styles.logoText, { color: colors.sidebarText }]}>ODO Clinic</Text>
+          <Text style={[styles.logoText, { color: colors.sidebarText }]}>{config.nombre ?? 'ODO Clinic'}</Text>
         )}
       </View>
 
@@ -92,11 +100,18 @@ export default function Sidebar({ activeRoute, onNavigate, collapsed = false, is
           onPress={() => onNavigate('Profile')}
           activeOpacity={0.75}
         >
-          <View style={[styles.profileAvatar, { backgroundColor: colors.primary + '33' }]}>
-            <Text style={[styles.profileInitials, { color: colors.sidebarActive }]}>
-              {initials(user?.nombre)}
-            </Text>
-          </View>
+          {user?.fotoPerfil ? (
+            <Image
+              source={{ uri: `${API_BASE_URL}/profile/photo/${user.fotoPerfil}` }}
+              style={styles.profileAvatar}
+            />
+          ) : (
+            <View style={[styles.profileAvatar, { backgroundColor: colors.primary + '33' }]}>
+              <Text style={[styles.profileInitials, { color: colors.sidebarActive }]}>
+                {initials(user?.nombre)}
+              </Text>
+            </View>
+          )}
           {!collapsed && (
             <View style={styles.profileInfo}>
               <Text style={[styles.profileName, { color: colors.sidebarText }]} numberOfLines={1}>

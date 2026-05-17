@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Modal,
-  TouchableOpacity, Alert, ActivityIndicator,
+  TouchableOpacity, TouchableWithoutFeedback, Alert, ActivityIndicator,
   Platform, Image, useWindowDimensions,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -44,6 +44,7 @@ export default function ProfileScreen() {
   const [saving,         setSaving]         = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [showPhotoPicker, setShowPhotoPicker] = useState(false);
+  const [showPhotoViewer, setShowPhotoViewer] = useState(false);
 
   const set = (key) => (val) => {
     setForm((f) => ({ ...f, [key]: val }));
@@ -143,7 +144,12 @@ export default function ProfileScreen() {
     >
       {/* Avatar card */}
       <View style={[styles.avatarCard, { backgroundColor: colors.surface }, SHADOWS.md(isDark)]}>
-        <TouchableOpacity onPress={() => setShowPhotoPicker(true)} activeOpacity={0.8} style={styles.avatarWrap}>
+        <TouchableOpacity
+          onPress={() => setShowPhotoPicker(true)}
+          onLongPress={() => photoUrl && setShowPhotoViewer(true)}
+          activeOpacity={0.8}
+          style={styles.avatarWrap}
+        >
           {photoUrl ? (
             <Image source={{ uri: photoUrl }} style={styles.avatarPhoto} />
           ) : (
@@ -256,6 +262,20 @@ export default function ProfileScreen() {
 
       <View style={{ height: 40 }} />
 
+      {/* Fullscreen photo viewer */}
+      <Modal visible={showPhotoViewer} transparent animationType="fade">
+        <TouchableWithoutFeedback onPress={() => setShowPhotoViewer(false)}>
+          <View style={styles.viewerOverlay}>
+            <TouchableOpacity style={styles.viewerClose} onPress={() => setShowPhotoViewer(false)} activeOpacity={0.7}>
+              <Ionicons name="close" size={28} color="#fff" />
+            </TouchableOpacity>
+            {photoUrl && (
+              <Image source={{ uri: photoUrl }} style={styles.viewerImage} resizeMode="contain" />
+            )}
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
       {/* Photo picker modal — works on web, Android, iOS */}
       <Modal visible={showPhotoPicker} transparent animationType="slide">
         <TouchableOpacity
@@ -266,6 +286,20 @@ export default function ProfileScreen() {
           <View style={[styles.modalSheet, { backgroundColor: colors.surface }]}>
             <View style={[styles.modalHandle, { backgroundColor: colors.border }]} />
             <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Foto de perfil</Text>
+
+            {photoUrl && (
+              <TouchableOpacity
+                style={[styles.modalOption, { borderBottomColor: colors.border }]}
+                onPress={() => { setShowPhotoPicker(false); setShowPhotoViewer(true); }}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.modalOptionIcon, { backgroundColor: colors.primaryLight }]}>
+                  <Ionicons name="eye-outline" size={22} color={colors.primary} />
+                </View>
+                <Text style={[styles.modalOptionText, { color: colors.textPrimary }]}>Ver foto</Text>
+                <Ionicons name="chevron-forward" size={18} color={colors.border} />
+              </TouchableOpacity>
+            )}
 
             {Platform.OS !== 'web' && (
               <TouchableOpacity
@@ -330,6 +364,10 @@ const styles = StyleSheet.create({
   saveBtnText:     { color: '#fff', fontSize: 16, fontWeight: '700' },
   logoutBtn:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1.5, borderRadius: 14, height: 50, marginTop: 12 },
   logoutText:      { color: '#ef4444', fontSize: 15, fontWeight: '700' },
+  // Photo viewer
+  viewerOverlay:   { flex: 1, backgroundColor: '#000000ee', justifyContent: 'center', alignItems: 'center' },
+  viewerClose:     { position: 'absolute', top: 48, right: 20, zIndex: 10, padding: 8 },
+  viewerImage:     { width: '90%', height: '80%' },
   // Photo picker modal
   modalOverlay:    { flex: 1, backgroundColor: '#00000066', justifyContent: 'flex-end' },
   modalSheet:      { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 36 },
